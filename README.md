@@ -1,5 +1,6 @@
-# semigroups [![Build Status](https://travis-ci.com/ChristopherDavenport/semigroups.svg?branch=master)](https://travis-ci.com/ChristopherDavenport/semigroups) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.chrisdavenport/semigroups_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.chrisdavenport/semigroups_2.12)
-
+# semigroups
+![Continuous Integration](https://github.com/typelevel/semigroups/workflows/Continuous%20Integration/badge.svg)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.chrisdavenport/semigroups_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.chrisdavenport/semigroups_2.12)
 
 Set of Generic Semigroup Types and Accompanying Instances very useful for abstract programming.
 
