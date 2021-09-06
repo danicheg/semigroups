@@ -1,12 +1,29 @@
-val Scala212 = "2.12.12"
+val Scala212 = "2.12.14"
 val Scala213 = "2.13.6"
+val Scala3 = "3.0.2"
 
-ThisBuild / crossScalaVersions := Seq(Scala212, Scala213)
+ThisBuild / crossScalaVersions := Seq(Scala212, Scala213, Scala3)
 ThisBuild / scalaVersion := Scala212
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8")
 ThisBuild / githubWorkflowArtifactUpload := false
-ThisBuild / githubWorkflowBuild := Seq(WorkflowStep.Sbt(List("test"), name = Some("Validation")))
+ThisBuild / githubWorkflowBuild := Seq(
+  WorkflowStep.Sbt(List("mimaReportBinaryIssues"), name = Some("Check binary issues")),
+  WorkflowStep.Sbt(List("Test/compile"), name = Some("Compile")),
+  WorkflowStep.Sbt(List("test"), name = Some("Run tests"))
+)
+
+def scalaVersionSpecificFolders(srcName: String, srcBaseDir: java.io.File, scalaVersion: String) = {
+  def extraDirs(suffix: String) =
+    List(CrossType.Pure, CrossType.Full)
+      .flatMap(_.sharedSrcDir(srcBaseDir, srcName).toList.map(f => file(f.getPath + suffix)))
+
+  CrossVersion.partialVersion(scalaVersion) match {
+    case Some((2, _)) => extraDirs("-2.x")
+    case Some((0 | 3, _)) => extraDirs("-3.x")
+    case _ => Nil
+  }
+}
 
 lazy val semigroups = project.in(file("."))
   .settings(commonSettings, releaseSettings, skipOnPublishSettings)
@@ -27,7 +44,7 @@ lazy val coreJS = core.js
 val catsV = "2.6.1"
 val disciplineScalatestV = "2.1.5"
 
-val kindProjectorV = "0.10.3"
+val kindProjectorV = "0.13.2"
 val betterMonadicForV = "0.3.1"
 
 val scalaTestV = "3.2.9"
@@ -40,13 +57,30 @@ lazy val contributors = Seq(
 // General Settings
 lazy val commonSettings = Seq(
   organization := "io.chrisdavenport",
-
-  scalaVersion := "2.12.14",
-  crossScalaVersions := Seq("2.13.6", scalaVersion.value),
-  scalacOptions += "-Yrangepos",
-
-  addCompilerPlugin("org.typelevel" % "kind-projector" % kindProjectorV cross CrossVersion.binary),
-  addCompilerPlugin("com.olegpy" %% "better-monadic-for" % betterMonadicForV),
+  Compile / unmanagedSourceDirectories ++= scalaVersionSpecificFolders(
+    "main",
+    baseDirectory.value,
+    scalaVersion.value
+  ),
+  Test / unmanagedSourceDirectories ++= scalaVersionSpecificFolders(
+    "test",
+    baseDirectory.value,
+    scalaVersion.value
+  ),
+  scalacOptions ++= (
+    if (ScalaArtifacts.isScala3(scalaVersion.value)) Nil
+    else Seq("-Yrangepos", "-language:higherKinds")
+    ),
+  libraryDependencies ++= (
+    if (ScalaArtifacts.isScala3(scalaVersion.value)) Nil
+    else
+      Seq(
+        compilerPlugin(
+          ("org.typelevel" %% "kind-projector" % kindProjectorV).cross(CrossVersion.full)
+        ),
+        compilerPlugin("com.olegpy" %% "better-monadic-for" % betterMonadicForV)
+      )
+    ),
   libraryDependencies ++= Seq(
     "org.typelevel"               %%% "cats-core"                  % catsV,
     "org.typelevel"               %%% "cats-laws"                  % catsV                % Test,
