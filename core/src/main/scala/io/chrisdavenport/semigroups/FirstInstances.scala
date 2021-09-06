@@ -1,20 +1,16 @@
 package io.chrisdavenport.semigroups
 
 import cats._
-import cats.implicits._
+import cats.syntax.all._
 import cats.kernel.Band
 
-final case class First[A](getFirst: A) extends AnyVal
-object First extends FirstInstances
-
 private[semigroups] trait FirstInstances extends FirstInstances1  {
-
   implicit def firstBand[A]: Band[First[A]] = new Band[First[A]]{
     def combine(x: First[A], y: First[A]): First[A] = x
   }
   
   implicit def firstShow[A: Show]: Show[First[A]] = 
-    Show.show[First[A]](firstA => show"First(${firstA.getFirst})")
+    Show.show[First[A]](firstA => s"First(${firstA.getFirst.show})")
 
   implicit def firstOrder[A: Order]: Order[First[A]] =
     Order.by(_.getFirst)
@@ -26,9 +22,9 @@ private[semigroups] trait FirstInstances extends FirstInstances1  {
 
       @scala.annotation.tailrec
       def tailRecM[A, B](a: A)(f: A => First[Either[A,B]]): First[B] =
-        f(a) match {
-          case First(Left(a)) => tailRecM(a)(f)
-          case First(Right(b)) => First(b)
+        f(a).getFirst match {
+          case Left(a) => tailRecM(a)(f)
+          case Right(b) => First(b)
         }
       // Members declared in cats.Foldable
       def foldLeft[A, B](fa: First[A],b: B)(f: (B, A) => B): B = 
