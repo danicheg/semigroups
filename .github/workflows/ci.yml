@@ -22,7 +22,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        scala: [2.12.12, 2.13.6]
+        scala: [2.12.14, 2.13.6, 3.0.2]
         java: [adopt@1.8]
     runs-on: ${{ matrix.os }}
     steps:
@@ -51,5 +51,11 @@ jobs:
       - name: Check that workflows are up to date
         run: sbt ++${{ matrix.scala }} githubWorkflowCheck
 
-      - name: Validation
+      - name: Check binary issues
+        run: sbt ++${{ matrix.scala }} mimaReportBinaryIssues
+
+      - name: Compile
+        run: sbt ++${{ matrix.scala }} Test/compile
+
+      - name: Run tests
         run: sbt ++${{ matrix.scala }} test
