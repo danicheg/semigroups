@@ -20,6 +20,9 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
   .settings(
     name := "semigroups"
   )
+  .jsSettings(
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+  )
 
 lazy val coreJVM = core.jvm
 lazy val coreJS = core.js
