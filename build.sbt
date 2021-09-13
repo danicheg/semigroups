@@ -20,18 +20,17 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
   .settings(
     name := "semigroups"
   )
+  .jsSettings(
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+  )
 
 lazy val coreJVM = core.jvm
 lazy val coreJS = core.js
 
 val catsV = "2.6.1"
-val disciplineScalatestV = "2.1.5"
-
+val disciplineMunitV = "1.0.9"
 val kindProjectorV = "0.10.3"
 val betterMonadicForV = "0.3.1"
-
-val scalaTestV = "3.2.9"
-
 
 lazy val contributors = Seq(
   "ChristopherDavenport" -> "Christopher Davenport"
@@ -50,8 +49,7 @@ lazy val commonSettings = Seq(
   libraryDependencies ++= Seq(
     "org.typelevel"               %%% "cats-core"                  % catsV,
     "org.typelevel"               %%% "cats-laws"                  % catsV                % Test,
-    "org.typelevel"               %%% "discipline-scalatest"       % disciplineScalatestV % Test,
-    "org.scalatest"               %%%  "scalatest"                 % scalaTestV           % Test
+    "org.typelevel"               %%% "discipline-munit"           % disciplineMunitV     % Test
   )
 )
 
