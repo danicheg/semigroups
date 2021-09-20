@@ -8,7 +8,7 @@ ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8")
 ThisBuild / githubWorkflowArtifactUpload := false
 ThisBuild / githubWorkflowBuild := Seq(
-  WorkflowStep.Sbt(List("mimaReportBinaryIssues"), name = Some("Check binary issues")),
+  WorkflowStep.Sbt(List("coreJVM/mimaReportBinaryIssues", "coreJS/mimaReportBinaryIssues"), name = Some("Check binary issues")),
   WorkflowStep.Sbt(List("Test/compile"), name = Some("Compile")),
   WorkflowStep.Sbt(List("test"), name = Some("Run tests"))
 )
@@ -27,13 +27,16 @@ def scalaVersionSpecificFolders(srcName: String, srcBaseDir: java.io.File, scala
 
 lazy val semigroups = project.in(file("."))
   .settings(commonSettings, releaseSettings, skipOnPublishSettings)
+  .settings(
+    mimaPreviousArtifacts := Set()
+  )
   .aggregate(coreJVM, coreJS)
 
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("core"))
-  .settings(commonSettings, releaseSettings)
+  .settings(commonSettings, releaseSettings, mimaSettings)
   .settings(
     name := "semigroups"
   )
@@ -200,7 +203,11 @@ lazy val mimaSettings = {
     mimaBinaryIssueFilters ++= {
       import com.typesafe.tools.mima.core._
       import com.typesafe.tools.mima.core.ProblemFilters._
-      Seq()
+      Seq(
+        ProblemFilters.exclude[DirectMissingMethodProblem]("io.chrisdavenport.semigroups.First.firstSemigroup"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("io.chrisdavenport.semigroups.Intersect.IntersectEq"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("io.chrisdavenport.semigroups.Last.lastSemigroup")
+      )
     }
   )
 }
