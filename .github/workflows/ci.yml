@@ -52,6 +52,7 @@ jobs:
         run: sbt ++${{ matrix.scala }} githubWorkflowCheck
 
       - name: Check binary issues
+        if: matrix.scala != '3.0.2'
         run: sbt ++${{ matrix.scala }} coreJVM/mimaReportBinaryIssues coreJS/mimaReportBinaryIssues
 
       - name: Compile

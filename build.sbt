@@ -8,7 +8,11 @@ ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8")
 ThisBuild / githubWorkflowArtifactUpload := false
 ThisBuild / githubWorkflowBuild := Seq(
-  WorkflowStep.Sbt(List("coreJVM/mimaReportBinaryIssues", "coreJS/mimaReportBinaryIssues"), name = Some("Check binary issues")),
+  WorkflowStep.Sbt(
+    List("coreJVM/mimaReportBinaryIssues", "coreJS/mimaReportBinaryIssues"),
+    name = Some("Check binary issues"),
+    cond = Some(s"matrix.scala != '$Scala3'")
+  ),
   WorkflowStep.Sbt(List("Test/compile"), name = Some("Compile")),
   WorkflowStep.Sbt(List("test"), name = Some("Run tests"))
 )
