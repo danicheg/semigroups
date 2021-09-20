@@ -52,7 +52,7 @@ jobs:
         run: sbt ++${{ matrix.scala }} githubWorkflowCheck
 
       - name: Check binary issues
-        run: sbt ++${{ matrix.scala }} mimaReportBinaryIssues
+        run: sbt ++${{ matrix.scala }} coreJVM/mimaReportBinaryIssues coreJS/mimaReportBinaryIssues
 
       - name: Compile
         run: sbt ++${{ matrix.scala }} Test/compile
