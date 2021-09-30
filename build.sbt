@@ -6,12 +6,15 @@ ThisBuild / scalaVersion := Scala212
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8")
 ThisBuild / githubWorkflowArtifactUpload := false
-ThisBuild / githubWorkflowBuild := Seq(WorkflowStep.Sbt(List("test"), name = Some("Validation")))
+ThisBuild / githubWorkflowBuild := Seq(
+  WorkflowStep.Sbt(List("scalafmtCheckAll", "scalafmtSbtCheck"), name = Some("Check formatting")),
+  WorkflowStep.Sbt(List("test"), name = Some("Run tests"))
+)
 
-lazy val semigroups = project.in(file("."))
+lazy val semigroups = project
+  .in(file("."))
   .settings(commonSettings, releaseSettings, skipOnPublishSettings)
   .aggregate(coreJVM, coreJS)
-
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Pure)
@@ -39,17 +42,15 @@ lazy val contributors = Seq(
 // General Settings
 lazy val commonSettings = Seq(
   organization := "io.chrisdavenport",
-
   scalaVersion := "2.12.15",
   crossScalaVersions := Seq("2.13.6", scalaVersion.value),
   scalacOptions += "-Yrangepos",
-
   addCompilerPlugin("org.typelevel" % "kind-projector" % kindProjectorV cross CrossVersion.binary),
   addCompilerPlugin("com.olegpy" %% "better-monadic-for" % betterMonadicForV),
   libraryDependencies ++= Seq(
-    "org.typelevel"               %%% "cats-core"                  % catsV,
-    "org.typelevel"               %%% "cats-laws"                  % catsV                % Test,
-    "org.typelevel"               %%% "discipline-munit"           % disciplineMunitV     % Test
+    "org.typelevel" %%% "cats-core"        % catsV,
+    "org.typelevel" %%% "cats-laws"        % catsV            % Test,
+    "org.typelevel" %%% "discipline-munit" % disciplineMunitV % Test
   )
 )
 
@@ -83,13 +84,12 @@ lazy val releaseSettings = {
       for {
         username <- Option(System.getenv().get("SONATYPE_USERNAME"))
         password <- Option(System.getenv().get("SONATYPE_PASSWORD"))
-      } yield
-        Credentials(
-          "Sonatype Nexus Repository Manager",
-          "oss.sonatype.org",
-          username,
-          password
-        )
+      } yield Credentials(
+        "Sonatype Nexus Repository Manager",
+        "oss.sonatype.org",
+        username,
+        password
+      )
     ).toSeq,
     Test / publishArtifact := false,
     releasePublishArtifactsAction := PgpKeys.publishSigned.value,
@@ -107,13 +107,14 @@ lazy val releaseSettings = {
     },
     pomExtra := {
       <developers>
-        {for ((username, name) <- contributors) yield
-        <developer>
+        {
+        for ((username, name) <- contributors)
+          yield <developer>
           <id>{username}</id>
           <name>{name}</name>
           <url>http://github.com/{username}</url>
         </developer>
-        }
+      }
       </developers>
     }
   )
@@ -124,7 +125,7 @@ lazy val mimaSettings = {
 
   def semverBinCompatVersions(major: Int, minor: Int, patch: Int): Set[(Int, Int, Int)] = {
     val majorVersions: List[Int] = List(major)
-    val minorVersions : List[Int] =
+    val minorVersions: List[Int] =
       if (major >= 1) Range(0, minor).inclusive.toList
       else List(minor)
     def patchVersions(currentMinVersion: Int): List[Int] =
@@ -144,7 +145,7 @@ lazy val mimaSettings = {
     Version(version) match {
       case Some(Version(major, Seq(minor, patch), _)) =>
         semverBinCompatVersions(major.toInt, minor.toInt, patch.toInt)
-          .map{case (maj, min, pat) => maj.toString + "." + min.toString + "." + pat.toString}
+          .map { case (maj, min, pat) => maj.toString + "." + min.toString + "." + pat.toString }
       case _ =>
         Set.empty[String]
     }
@@ -159,7 +160,7 @@ lazy val mimaSettings = {
     mimaFailOnProblem := mimaVersions(version.value).toList.headOption.isDefined,
     mimaPreviousArtifacts := (mimaVersions(version.value) ++ extraVersions)
       .filterNot(excludedVersions.contains(_))
-      .map{v =>
+      .map { v =>
         val moduleN = moduleName.value + "_" + scalaBinaryVersion.value.toString
         organization.value % moduleN % v
       },
