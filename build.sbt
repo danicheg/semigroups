@@ -1,8 +1,8 @@
-val Scala212 = "2.12.12"
+val Scala212 = "2.12.15"
 val Scala213 = "2.13.6"
 
 ThisBuild / crossScalaVersions := Seq(Scala212, Scala213)
-ThisBuild / scalaVersion := Scala212
+ThisBuild / scalaVersion := crossScalaVersions.value.last
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8")
 ThisBuild / githubWorkflowArtifactUpload := false
@@ -42,8 +42,6 @@ lazy val contributors = Seq(
 // General Settings
 lazy val commonSettings = Seq(
   organization := "io.chrisdavenport",
-  scalaVersion := "2.12.15",
-  crossScalaVersions := Seq("2.13.6", scalaVersion.value),
   scalacOptions += "-Yrangepos",
   addCompilerPlugin("org.typelevel" % "kind-projector" % kindProjectorV cross CrossVersion.binary),
   addCompilerPlugin("com.olegpy" %% "better-monadic-for" % betterMonadicForV),
