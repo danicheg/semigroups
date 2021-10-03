@@ -4,7 +4,7 @@ import org.scalacheck._
 
 trait SemigroupsArbitraries {
   implicit def functionArb[A, B: Arbitrary]: Arbitrary[A => B] =
-    Arbitrary(Arbitrary.arbitrary[B].map { b => _: A => b })
+    Arbitrary(Arbitrary.arbitrary[B].map { b => (_: A) => b })
   implicit def dualArbitrary[A: Arbitrary]: Arbitrary[Dual[A]] =
     Arbitrary(Arbitrary.arbitrary[A].map(Dual(_)))
   implicit def firstArbitrary[A: Arbitrary]: Arbitrary[First[A]] =
