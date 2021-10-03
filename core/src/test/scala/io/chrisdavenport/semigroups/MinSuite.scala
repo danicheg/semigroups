@@ -9,7 +9,10 @@ class MinSuite extends munit.DisciplineSuite with SemigroupsArbitraries {
   checkAll("Min", OrderTests[Min[Int]].order)
   checkAll("Min", BoundedSemilatticeTests[Min[Int]].boundedSemilattice)
   checkAll("Min", MonadTests[Min].monad[Int, Int, Int])
-  checkAll("Min", NonEmptyTraverseTests[Min].nonEmptyTraverse[Option, Int, Int, Int, Int, Option, Option])
+  checkAll(
+    "Min",
+    NonEmptyTraverseTests[Min].nonEmptyTraverse[Option, Int, Int, Int, Int, Option, Option]
+  )
   checkAll("Min", DistributiveTests[Min].distributive[Int, Int, Int, Option, Id])
 
   test("show") {

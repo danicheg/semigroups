@@ -1,13 +1,14 @@
-val Scala212 = "2.12.14"
+val Scala212 = "2.12.15"
 val Scala213 = "2.13.6"
 val Scala3 = "3.0.2"
 
 ThisBuild / crossScalaVersions := Seq(Scala212, Scala213, Scala3)
-ThisBuild / scalaVersion := Scala212
+ThisBuild / scalaVersion := Scala213
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8")
 ThisBuild / githubWorkflowArtifactUpload := false
 ThisBuild / githubWorkflowBuild := Seq(
+  WorkflowStep.Sbt(List("scalafmtCheckAll", "scalafmtSbtCheck"), name = Some("Check formatting")),
   WorkflowStep.Sbt(
     List("coreJVM/mimaReportBinaryIssues", "coreJS/mimaReportBinaryIssues"),
     name = Some("Check binary issues"),
@@ -29,13 +30,13 @@ def scalaVersionSpecificFolders(srcName: String, srcBaseDir: java.io.File, scala
   }
 }
 
-lazy val semigroups = project.in(file("."))
+lazy val semigroups = project
+  .in(file("."))
   .settings(commonSettings, releaseSettings, skipOnPublishSettings)
   .settings(
     mimaPreviousArtifacts := Set()
   )
   .aggregate(coreJVM, coreJS)
-
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Pure)
@@ -76,7 +77,7 @@ lazy val commonSettings = Seq(
   scalacOptions ++= (
     if (ScalaArtifacts.isScala3(scalaVersion.value)) Nil
     else Seq("-Yrangepos", "-language:higherKinds")
-    ),
+  ),
   libraryDependencies ++= (
     if (ScalaArtifacts.isScala3(scalaVersion.value)) Nil
     else
@@ -86,11 +87,11 @@ lazy val commonSettings = Seq(
         ),
         compilerPlugin("com.olegpy" %% "better-monadic-for" % betterMonadicForV)
       )
-    ),
+  ),
   libraryDependencies ++= Seq(
-    "org.typelevel"               %%% "cats-core"                  % catsV,
-    "org.typelevel"               %%% "cats-laws"                  % catsV                % Test,
-    "org.typelevel"               %%% "discipline-munit"           % disciplineMunitV     % Test
+    "org.typelevel" %%% "cats-core"        % catsV,
+    "org.typelevel" %%% "cats-laws"        % catsV            % Test,
+    "org.typelevel" %%% "discipline-munit" % disciplineMunitV % Test
   )
 )
 
@@ -124,13 +125,12 @@ lazy val releaseSettings = {
       for {
         username <- Option(System.getenv().get("SONATYPE_USERNAME"))
         password <- Option(System.getenv().get("SONATYPE_PASSWORD"))
-      } yield
-        Credentials(
-          "Sonatype Nexus Repository Manager",
-          "oss.sonatype.org",
-          username,
-          password
-        )
+      } yield Credentials(
+        "Sonatype Nexus Repository Manager",
+        "oss.sonatype.org",
+        username,
+        password
+      )
     ).toSeq,
     Test / publishArtifact := false,
     releasePublishArtifactsAction := PgpKeys.publishSigned.value,
@@ -148,13 +148,14 @@ lazy val releaseSettings = {
     },
     pomExtra := {
       <developers>
-        {for ((username, name) <- contributors) yield
-        <developer>
+        {
+        for ((username, name) <- contributors)
+          yield <developer>
           <id>{username}</id>
           <name>{name}</name>
           <url>http://github.com/{username}</url>
         </developer>
-        }
+      }
       </developers>
     }
   )
@@ -165,7 +166,7 @@ lazy val mimaSettings = {
 
   def semverBinCompatVersions(major: Int, minor: Int, patch: Int): Set[(Int, Int, Int)] = {
     val majorVersions: List[Int] = List(major)
-    val minorVersions : List[Int] =
+    val minorVersions: List[Int] =
       if (major >= 1) Range(0, minor).inclusive.toList
       else List(minor)
     def patchVersions(currentMinVersion: Int): List[Int] =
@@ -185,7 +186,7 @@ lazy val mimaSettings = {
     Version(version) match {
       case Some(Version(major, Seq(minor, patch), _)) =>
         semverBinCompatVersions(major.toInt, minor.toInt, patch.toInt)
-          .map{case (maj, min, pat) => maj.toString + "." + min.toString + "." + pat.toString}
+          .map { case (maj, min, pat) => maj.toString + "." + min.toString + "." + pat.toString }
       case _ =>
         Set.empty[String]
     }
@@ -200,7 +201,7 @@ lazy val mimaSettings = {
     mimaFailOnProblem := mimaVersions(version.value).toList.headOption.isDefined,
     mimaPreviousArtifacts := (mimaVersions(version.value) ++ extraVersions)
       .filterNot(excludedVersions.contains(_))
-      .map{v =>
+      .map { v =>
         val moduleN = moduleName.value + "_" + scalaBinaryVersion.value.toString
         organization.value % moduleN % v
       },
@@ -208,9 +209,15 @@ lazy val mimaSettings = {
       import com.typesafe.tools.mima.core._
       import com.typesafe.tools.mima.core.ProblemFilters._
       Seq(
-        ProblemFilters.exclude[DirectMissingMethodProblem]("io.chrisdavenport.semigroups.First.firstSemigroup"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("io.chrisdavenport.semigroups.Intersect.IntersectEq"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("io.chrisdavenport.semigroups.Last.lastSemigroup")
+        ProblemFilters.exclude[DirectMissingMethodProblem](
+          "io.chrisdavenport.semigroups.First.firstSemigroup"
+        ),
+        ProblemFilters.exclude[DirectMissingMethodProblem](
+          "io.chrisdavenport.semigroups.Intersect.IntersectEq"
+        ),
+        ProblemFilters.exclude[DirectMissingMethodProblem](
+          "io.chrisdavenport.semigroups.Last.lastSemigroup"
+        )
       )
     }
   )
