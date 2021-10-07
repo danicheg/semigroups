@@ -1,18 +1,15 @@
 package io.chrisdavenport.semigroups
 
 import cats._
-import cats.implicits._
+import cats.syntax.all._
 import cats.kernel.Semilattice
 import cats.kernel.LowerBounded
 import cats.kernel.BoundedSemilattice
 
-final case class Max[A](getMax: A) extends AnyVal
-object Max extends MaxInstances {
+private[semigroups] trait MaxInstances extends MaxInstances1 {
   def max[F[_]: Reducible, A](fa: F[A])(implicit L: Semigroup[Max[A]]): A =
     fa.reduceMap(Max(_)).getMax
-}
 
-private[semigroups] trait MaxInstances extends MaxInstances1 {
   implicit def orderedMaxBoundedSemilattice[A: LowerBounded: Order]: BoundedSemilattice[Max[A]] =
     new BoundedSemilattice[Max[A]] {
       def combine(x: Max[A], y: Max[A]): Max[A] = Max(Order[A].max(x.getMax, y.getMax))
@@ -21,9 +18,8 @@ private[semigroups] trait MaxInstances extends MaxInstances1 {
 }
 
 private[semigroups] trait MaxInstances1 {
-
   implicit def maxShow[A: Show]: Show[Max[A]] =
-    Show.show[Max[A]](maxA => show"Max(${maxA.getMax})")
+    Show.show[Max[A]](maxA => s"Max(${maxA.getMax.show})")
 
   implicit def maxOrder[A: Order]: Order[Max[A]] =
     Order.by(_.getMax)
@@ -41,9 +37,9 @@ private[semigroups] trait MaxInstances1 {
 
       @scala.annotation.tailrec
       def tailRecM[A, B](a: A)(f: A => Max[Either[A, B]]): Max[B] =
-        f(a) match {
-          case Max(Left(a)) => tailRecM(a)(f)
-          case Max(Right(b)) => Max(b)
+        f(a).getMax match {
+          case Left(a) => tailRecM(a)(f)
+          case Right(b) => Max(b)
         }
       // Members declared in cats.Foldable
       def foldLeft[A, B](fa: Max[A], b: B)(f: (B, A) => B): B =

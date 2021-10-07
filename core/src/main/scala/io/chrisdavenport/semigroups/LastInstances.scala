@@ -1,11 +1,8 @@
 package io.chrisdavenport.semigroups
 
 import cats._
-import cats.implicits._
+import cats.syntax.all._
 import cats.kernel.Band
-
-final case class Last[A](getLast: A) extends AnyVal
-object Last extends LastInstances
 
 private[semigroups] trait LastInstances extends LastInstances1 {
   implicit def lastBand[A]: Band[Last[A]] = new Band[Last[A]] {
@@ -14,9 +11,8 @@ private[semigroups] trait LastInstances extends LastInstances1 {
 }
 
 private[semigroups] trait LastInstances1 {
-
   implicit def lastShow[A: Show]: Show[Last[A]] =
-    Show.show[Last[A]](lastA => show"Last(${lastA.getLast})")
+    Show.show[Last[A]](lastA => s"Last(${lastA.getLast.show})")
 
   implicit def LastOrder[A: Order]: Order[Last[A]] =
     Order.by(_.getLast)
@@ -30,9 +26,9 @@ private[semigroups] trait LastInstances1 {
 
       @scala.annotation.tailrec
       def tailRecM[A, B](a: A)(f: A => Last[Either[A, B]]): Last[B] =
-        f(a) match {
-          case Last(Left(a)) => tailRecM(a)(f)
-          case Last(Right(b)) => Last(b)
+        f(a).getLast match {
+          case Left(a) => tailRecM(a)(f)
+          case Right(b) => Last(b)
         }
       // Members declared in cats.Foldable
       def foldLeft[A, B](fa: Last[A], b: B)(f: (B, A) => B): B =

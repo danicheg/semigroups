@@ -1,25 +1,47 @@
 val Scala212 = "2.12.15"
 val Scala213 = "2.13.6"
+val Scala3 = "3.0.2"
 
-ThisBuild / crossScalaVersions := Seq(Scala212, Scala213)
-ThisBuild / scalaVersion := crossScalaVersions.value.last
+ThisBuild / crossScalaVersions := Seq(Scala212, Scala213, Scala3)
+ThisBuild / scalaVersion := Scala213
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8")
 ThisBuild / githubWorkflowArtifactUpload := false
 ThisBuild / githubWorkflowBuild := Seq(
   WorkflowStep.Sbt(List("scalafmtCheckAll", "scalafmtSbtCheck"), name = Some("Check formatting")),
+  WorkflowStep.Sbt(
+    List("coreJVM/mimaReportBinaryIssues", "coreJS/mimaReportBinaryIssues"),
+    name = Some("Check binary issues"),
+    cond = Some(s"matrix.scala != '$Scala3'")
+  ),
+  WorkflowStep.Sbt(List("Test/compile"), name = Some("Compile")),
   WorkflowStep.Sbt(List("test"), name = Some("Run tests"))
 )
+
+def scalaVersionSpecificFolders(srcName: String, srcBaseDir: java.io.File, scalaVersion: String) = {
+  def extraDirs(suffix: String) =
+    List(CrossType.Pure, CrossType.Full)
+      .flatMap(_.sharedSrcDir(srcBaseDir, srcName).toList.map(f => file(f.getPath + suffix)))
+
+  CrossVersion.partialVersion(scalaVersion) match {
+    case Some((2, _)) => extraDirs("-2.x")
+    case Some((0 | 3, _)) => extraDirs("-3.x")
+    case _ => Nil
+  }
+}
 
 lazy val semigroups = project
   .in(file("."))
   .settings(commonSettings, releaseSettings, skipOnPublishSettings)
+  .settings(
+    mimaPreviousArtifacts := Set()
+  )
   .aggregate(coreJVM, coreJS)
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("core"))
-  .settings(commonSettings, releaseSettings)
+  .settings(commonSettings, releaseSettings, mimaSettings)
   .settings(
     name := "semigroups"
   )
@@ -32,7 +54,7 @@ lazy val coreJS = core.js
 
 val catsV = "2.6.1"
 val disciplineMunitV = "1.0.9"
-val kindProjectorV = "0.10.3"
+val kindProjectorV = "0.13.2"
 val betterMonadicForV = "0.3.1"
 
 lazy val contributors = Seq(
@@ -42,9 +64,30 @@ lazy val contributors = Seq(
 // General Settings
 lazy val commonSettings = Seq(
   organization := "io.chrisdavenport",
-  scalacOptions += "-Yrangepos",
-  addCompilerPlugin("org.typelevel" % "kind-projector" % kindProjectorV cross CrossVersion.binary),
-  addCompilerPlugin("com.olegpy" %% "better-monadic-for" % betterMonadicForV),
+  Compile / unmanagedSourceDirectories ++= scalaVersionSpecificFolders(
+    "main",
+    baseDirectory.value,
+    scalaVersion.value
+  ),
+  Test / unmanagedSourceDirectories ++= scalaVersionSpecificFolders(
+    "test",
+    baseDirectory.value,
+    scalaVersion.value
+  ),
+  scalacOptions ++= (
+    if (ScalaArtifacts.isScala3(scalaVersion.value)) Nil
+    else Seq("-Yrangepos", "-language:higherKinds")
+  ),
+  libraryDependencies ++= (
+    if (ScalaArtifacts.isScala3(scalaVersion.value)) Nil
+    else
+      Seq(
+        compilerPlugin(
+          ("org.typelevel" %% "kind-projector" % kindProjectorV).cross(CrossVersion.full)
+        ),
+        compilerPlugin("com.olegpy" %% "better-monadic-for" % betterMonadicForV)
+      )
+  ),
   libraryDependencies ++= Seq(
     "org.typelevel" %%% "cats-core"        % catsV,
     "org.typelevel" %%% "cats-laws"        % catsV            % Test,
@@ -165,7 +208,17 @@ lazy val mimaSettings = {
     mimaBinaryIssueFilters ++= {
       import com.typesafe.tools.mima.core._
       import com.typesafe.tools.mima.core.ProblemFilters._
-      Seq()
+      Seq(
+        ProblemFilters.exclude[DirectMissingMethodProblem](
+          "io.chrisdavenport.semigroups.First.firstSemigroup"
+        ),
+        ProblemFilters.exclude[DirectMissingMethodProblem](
+          "io.chrisdavenport.semigroups.Intersect.IntersectEq"
+        ),
+        ProblemFilters.exclude[DirectMissingMethodProblem](
+          "io.chrisdavenport.semigroups.Last.lastSemigroup"
+        )
+      )
     }
   )
 }

@@ -1,14 +1,10 @@
 package io.chrisdavenport.semigroups
 
 import cats._
-import cats.implicits._
+import cats.syntax.all._
 import cats.kernel.{CommutativeMonoid, Semilattice}
 
-final case class Intersect[A](getIntersect: Set[A]) extends AnyVal
-object Intersect extends IntersectInstances
-
 private[semigroups] abstract class IntersectInstances {
-
   implicit def intersectSemilattice[A]: Semilattice[Intersect[A]] = new Semilattice[Intersect[A]] {
     def combine(x: Intersect[A], y: Intersect[A]): Intersect[A] = Intersect(
       x.getIntersect.intersect(y.getIntersect)
@@ -16,7 +12,7 @@ private[semigroups] abstract class IntersectInstances {
   }
 
   implicit def intersectShow[A: Show]: Show[Intersect[A]] =
-    Show.show[Intersect[A]](ia => show"Intersect(${ia.getIntersect})")
+    Show.show[Intersect[A]](ia => s"Intersect(${ia.getIntersect.show})")
 
   implicit def IntersectEq[A]: Eq[Intersect[A]] = Eq.by(_.getIntersect)
 

@@ -1,17 +1,14 @@
 package io.chrisdavenport.semigroups
 
 import cats._
-import cats.implicits._
-
-final case class Dual[A](getDual: A) extends AnyVal
-object Dual extends DualInstances
+import cats.syntax.all._
 
 private[semigroups] trait DualInstances extends DualInstances1 {
   implicit def dualSemigroup[A: Semigroup]: Semigroup[Dual[A]] = new Semigroup[Dual[A]] {
     def combine(x: Dual[A], y: Dual[A]): Dual[A] = Dual(Semigroup[A].combine(y.getDual, x.getDual))
   }
   implicit def dualShow[A: Show]: Show[Dual[A]] =
-    Show.show[Dual[A]](dualA => show"Dual(${dualA.getDual})")
+    Show.show[Dual[A]](dualA => s"Dual(${dualA.getDual.show})")
 
   implicit def dualOrder[A: Order]: Order[Dual[A]] =
     Order.by(_.getDual)
@@ -25,9 +22,9 @@ private[semigroups] trait DualInstances extends DualInstances1 {
 
       @scala.annotation.tailrec
       def tailRecM[A, B](a: A)(f: A => Dual[Either[A, B]]): Dual[B] =
-        f(a) match {
-          case Dual(Left(a)) => tailRecM(a)(f)
-          case Dual(Right(b)) => Dual(b)
+        f(a).getDual match {
+          case Left(a) => tailRecM(a)(f)
+          case Right(b) => Dual(b)
         }
       // Members declared in cats.Foldable
       def foldLeft[A, B](fa: Dual[A], b: B)(f: (B, A) => B): B =
